@@ -13,6 +13,13 @@ const addCar = async (req, res) => {
       image,
     } = req.body;
 
+
+
+
+
+
+    
+
     if (!title || !brand || !pricePerDay || !fuelType || !transmission || !city) {
       return res.status(400).json({ message: "All fields required" });
     }
