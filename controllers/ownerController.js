@@ -236,26 +236,6 @@ const updateCar = async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //kjkjkjuioohh
 // ================= DELETE CAR =================
 const deleteCar = async (req, res) => {
