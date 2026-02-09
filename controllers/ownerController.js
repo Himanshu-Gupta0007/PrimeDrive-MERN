@@ -14,16 +14,27 @@ const addCar = async (req, res) => {
       image,
     } = req.body;
 
+    // required fields
     if (!title || !brand || !pricePerDay || !fuelType || !transmission || !city) {
       return res.status(400).json({ message: "All fields required" });
     }
 
+    // price validation
+    if (isNaN(pricePerDay) || Number(pricePerDay) <= 0) {
+      return res.status(400).json({ message: "Invalid price" });
+    }
+
+    // image validation
     if (!image) {
       return res.status(400).json({ message: "Please upload car image" });
     }
 
     if (!image.startsWith("/cars/")) {
       return res.status(400).json({ message: "Invalid image path" });
+    }
+
+    if (!/\.(jpg|jpeg|png|webp)$/i.test(image)) {
+      return res.status(400).json({ message: "Invalid image format" });
     }
 
     const car = await Car.create({
@@ -38,12 +49,17 @@ const addCar = async (req, res) => {
       isAvailable: true,
     });
 
-    res.status(201).json({ success: true, message: "Car added", car });
+    res.status(201).json({
+      success: true,
+      message: "Car added successfully",
+      car,
+    });
 
   } catch (error) {
     res.status(500).json({ success: false, message: "Add car failed" });
   }
 };
+
 
 
 // ================= UPDATE CAR =================
@@ -53,22 +69,44 @@ const updateCar = async (req, res) => {
 
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    // only owner can edit
+    // owner check
     if (car.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const updated = await Car.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body },
-      { new: true }
-    );
+    // allowed fields only (IMPORTANT SECURITY)
+    const allowedFields = [
+      "title",
+      "brand",
+      "pricePerDay",
+      "fuelType",
+      "transmission",
+      "city",
+      "image",
+    ];
 
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (field === "pricePerDay") {
+          if (isNaN(req.body[field]) || Number(req.body[field]) <= 0) {
+            return res.status(400).json({ message: "Invalid price" });
+          }
+          car[field] = Number(req.body[field]);
+        } else if (field === "title" || field === "brand" || field === "city") {
+          car[field] = req.body[field].trim();
+        } else {
+          car[field] = req.body[field];
+        }
+      }
+    });
 
+    await car.save();
 
-
-
-    res.json({ success: true, message: "Car updated", car: updated });
+    res.json({
+      success: true,
+      message: "Car updated successfully",
+      car,
+    });
 
   } catch (error) {
     res.status(500).json({ message: "Update failed" });
@@ -77,166 +115,6 @@ const updateCar = async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//kjkjkjuioohh
 // ================= DELETE CAR =================
 const deleteCar = async (req, res) => {
   try {
@@ -250,7 +128,10 @@ const deleteCar = async (req, res) => {
 
     await car.deleteOne();
 
-    res.json({ success: true, message: "Car deleted" });
+    res.json({
+      success: true,
+      message: "Car deleted successfully",
+    });
 
   } catch (error) {
     res.status(500).json({ message: "Delete failed" });
@@ -258,27 +139,6 @@ const deleteCar = async (req, res) => {
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//kjjjij
 
 // ================= TOGGLE AVAILABILITY =================
 const toggleAvailability = async (req, res) => {
